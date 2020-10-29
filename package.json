@@ -1,0 +1,29 @@
+{
+  "name": "js-backend",
+  "version": "1.0.0",
+  "description": "Endpoints to compile and deploy smart contracts",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shchye95/is452-js-backend.git"
+  },
+  "keywords": [
+    "RESTful"
+  ],
+  "author": "Soon Hang CHYE",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shchye95/is452-js-backend/issues"
+  },
+  "homepage": "https://github.com/shchye95/is452-js-backend#readme",
+  "devDependencies": {
+    "nodemon": "^2.0.6"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
