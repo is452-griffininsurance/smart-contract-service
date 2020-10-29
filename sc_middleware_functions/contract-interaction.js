@@ -46,7 +46,7 @@ exports.deploy = async function (req, res) {
 
   const signedPromise = account.signTransaction({
     data: web3.utils.toHex(smartInsuranceDeployment),
-    gas: web3.utils.toHex(305048),
+    gas: web3.utils.toHex(1800000),
   });
 
   signedPromise
