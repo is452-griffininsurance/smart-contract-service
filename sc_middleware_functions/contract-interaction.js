@@ -38,7 +38,7 @@ exports.payout = async function (req, res) {
   
   // Fetch insurance details from our API endpoint
   const insuranceDetails = await fetch(
-    "https://api.is452.cloud/get_insurance_by_id?insurance_id=5fa37018faad1fb19321fec1",
+    "https://api.is452.cloud/get_insurance_by_id?insurance_id=5fa3a6172d8801c30fa5fc84",
     {
       method: "GET",
       headers: {

@@ -28,8 +28,9 @@ contract FlightInsurance is ISmartInsurance {
     address payable public escrow = payable(
         0xfeB87197aBd18dDaBD28B58b205936dfB4569B17
     );
+    // Our address to hold the commissions is 0xd9CE694d87A939341e2e86eF032dE1e08f26e271
     address payable public commissions = payable(
-        0xc008b0ce010280fa0e0a367df632ceba7d89e7ed7a5e3d2e05d7652b0094501e
+        0xd9CE694d87A939341e2e86eF032dE1e08f26e271
     );
 
     string public flightCode;
