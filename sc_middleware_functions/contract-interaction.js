@@ -1,9 +1,13 @@
+const fetch = require("node-fetch");
+
 require("dotenv").config();
+
 const Web3 = require("web3");
 const FlightInsurance = require("../blockchain/abis/FlightInsurance.json");
 
 var adminBalance = undefined;
 const adminWalletAddress = "0xfeB87197aBd18dDaBD28B58b205936dfB4569B17"; // Our wallet
+const adminCommissionWalletAddress = "0xd9CE694d87A939341e2e86eF032dE1e08f26e271"; // Our wallet to store commissions
 
 // Connect to Ethereum node
 const web3 = new Web3(
@@ -31,41 +35,96 @@ const account = web3.eth.accounts.privateKeyToAccount(
 exports.payout = async function (req, res) {
   console.log("Wallet Balance", adminBalance);
   // console.log(req);
-  // Creating contract object
+  
+  // Fetch insurance details from our API endpoint
+  const insuranceDetails = await fetch(
+    "https://api.is452.cloud/get_insurance_by_id?insurance_id=5fa37018faad1fb19321fec1",
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => {
+      return json.insurance;
+    });
+  
+  const contractAddress = insuranceDetails.contract_address;
+  const insuredAddress = insuranceDetails.insured_wallet_addr;
+  const contractBalance = await web3.eth.getBalance(contractAddress);
+  console.log(contractAddress, insuredAddress, "contractBalance", contractBalance);
 
-  const contractAddress = "0x743C5b2F134290741b6dE9C330d5A2Ff43c773d3";
+
   const eventType = "INSURED_EVENT";
 
   if (eventType === "INSURED_EVENT") {
     const flightInsurance = new web3.eth.Contract(
       FlightInsurance.abi,
-      contractAddress,
+      contractAddress
     );
 
-    // fetch("https://api.is452.cloud/get_insurance_by_id?insurance_id=5fa37018faad1fb19321fec1", {
-    //   method: "POST",
-    //   headers: {
-    //     Accept: "application/json",
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify(data),
-    // })
-  
-    const amount = await web3.utils.toWei("0.0005", "ether");
-  
+    const payoutForInsured = contractBalance * 0.98;
+    const commission = contractBalance - payoutForInsured
+    console.log("Payouts to insured and us", payoutForInsured, commission);
+
+    // Payout to insured
     const flightInsurancePayout = flightInsurance.methods
-      .payout("0x476f44118b3334444e2991b8e3450b855471db6d", amount)
+      .payout(insuredAddress, payoutForInsured.toString())
       .encodeABI();
-  
+    // Payout 
+    const flightInsuranceCommission = flightInsurance.methods
+      .payout(adminCommissionWalletAddress, commission.toString())
+      .encodeABI();
+
+    console.log(flightInsurancePayout);
+    console.log(flightInsuranceCommission);
+
+    const gasPrice = await web3.eth.getGasPrice()
+      .then((gasPrice) => {
+        return gasPrice
+      });
+      
+
+    const nonce = await web3.eth.getTransactionCount(adminWalletAddress);
+
     // Need to sign
-    const signedPromise = account.signTransaction({
+    const signedPromise1 = account.signTransaction({
       data: flightInsurancePayout,
       from: adminWalletAddress,
       to: web3.utils.toHex(contractAddress),
       gas: web3.utils.toHex(1800000),
+      nonce
     });
-  
-    signedPromise
+    await signedPromise1
+      .then((signedTx) => {
+        // raw transaction string may be available in .raw or
+        // .rawTransaction depending on which signTransaction
+        // function was called
+        const sentTx = web3.eth.sendSignedTransaction(
+          signedTx.raw || signedTx.rawTransaction
+        );
+        sentTx.on("receipt", (receipt) => {
+          console.log(receipt);
+        });
+        sentTx.on("error", (err) => {
+          console.error(err);
+        });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+
+    const signedPromise2 = account.signTransaction({
+      data: flightInsuranceCommission,
+      from: adminWalletAddress,
+      to: web3.utils.toHex(contractAddress),
+      gas: web3.utils.toHex(1800000),
+      nonce: nonce + 1,
+    });
+    await signedPromise2
       .then((signedTx) => {
         // raw transaction string may be available in .raw or
         // .rawTransaction depending on which signTransaction
@@ -86,9 +145,7 @@ exports.payout = async function (req, res) {
   }
 
   if (eventType === "NO_INSURED_EVENT") {
-    
   }
-
 
   res.json({ message: "payout ok" });
 };
@@ -103,10 +160,7 @@ exports.deploy = async function (req, res) {
   const smartInsuranceDeployment = smartInsurance
     .deploy({
       data: FlightInsurance.bytecode,
-      arguments: [
-        "SQ306",
-        "2020-11-30",
-      ],
+      arguments: ["SQ306", "2020-11-30"],
     })
     .encodeABI();
 

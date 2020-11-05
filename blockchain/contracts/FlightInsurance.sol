@@ -21,6 +21,7 @@ contract FlightInsurance is ISmartInsurance {
     
     // Our address as escrow 0xfeB87197aBd18dDaBD28B58b205936dfB4569B17
     address payable public escrow = payable(0xfeB87197aBd18dDaBD28B58b205936dfB4569B17);
+    address payable public commissions = payable(0xc008b0ce010280fa0e0a367df632ceba7d89e7ed7a5e3d2e05d7652b0094501e);
     
     string public flightCode;
     string public flightDate;
@@ -67,8 +68,7 @@ contract FlightInsurance is ISmartInsurance {
         // The payable to address cannot be the escrow
         require(escrow != to, "You cannot transfer money that doesn't belong to you!");
         // The payable to address must either be the insured or the insurers
-        require(insurers[to] == to || insured == to, "This insurance contract can only payout to registered insurers or the insured.");
-        
+        require(insurers[to] == to || insured == to || commissions == to , "This insurance contract can only payout to registered insurers, or the insured, or the commissions address.");
         if (insured == to) {
             status = Status.PAID_OUT;
         }
