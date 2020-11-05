@@ -261,7 +261,7 @@ exports.payout = async function (req, res) {
     console.log("contractBalance", web3.utils.fromWei(contractBalance.toString(), "ether"));
   }
 
-  res.json({ message: "payout ok" });
+  res.json({ message: "Triggered event! Please wait for a while for the transactions to be reflected on Ethereum." });
 };
 
 // Contract deployment
