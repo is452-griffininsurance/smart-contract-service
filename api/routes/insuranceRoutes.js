@@ -11,7 +11,7 @@ module.exports = function(app) {
         .get(contract_interactor.deploy);
 
     app.route('/contract/payout')
-        .get(contract_interactor.payout);
+        .post(contract_interactor.payout);
     
     app.route('/create_account')
         .get(contract_interactor.create_account);

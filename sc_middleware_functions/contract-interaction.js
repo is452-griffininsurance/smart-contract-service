@@ -34,11 +34,14 @@ const account = web3.eth.accounts.privateKeyToAccount(
 // Flight Insurance Payout
 exports.payout = async function (req, res) {
   console.log("Wallet Balance", adminBalance);
-  // console.log(req);
+  const body = req.body;
+  const id = body.id;
+  const eventType = body.event;
+  console.log(id, eventType);
   
   // Fetch insurance details from our API endpoint
-  const insuranceDetails = await fetch(
-    "https://api.is452.cloud/get_insurance_by_id?insurance_id=5fa3a6172d8801c30fa5fc84",
+  const resp = await fetch(
+    `https://api.is452.cloud/get_insurance_by_id?insurance_id=${id}`,
     {
       method: "GET",
       headers: {
@@ -49,16 +52,14 @@ exports.payout = async function (req, res) {
   )
     .then((response) => response.json())
     .then((json) => {
-      return json.insurance;
+      return json
     });
-  
+  const insuranceDetails = resp.insurance;
+
   const contractAddress = insuranceDetails.contract_address;
   const insuredAddress = insuranceDetails.insured_wallet_addr;
   const contractBalance = await web3.eth.getBalance(contractAddress);
   console.log(contractAddress, insuredAddress, "contractBalance", contractBalance);
-
-
-  const eventType = "INSURED_EVENT";
 
   if (eventType === "INSURED_EVENT") {
     const flightInsurance = new web3.eth.Contract(
