@@ -55,6 +55,7 @@ exports.payout = async function (req, res) {
     .then((json) => {
       return json;
     });
+  
   const insuranceDetails = resp.insurance;
   const premiumAmount = insuranceDetails.premium_amount;
 
@@ -125,7 +126,6 @@ exports.payout = async function (req, res) {
     console.log("commission", web3.utils.fromWei(commission.toString(), "ether"));
     console.log("payoutForInsured", web3.utils.fromWei(payoutForInsured.toString(), "ether"));
     console.log("contractBalance", web3.utils.fromWei(contractBalance.toString(), "ether"));
-
 
     // Payout to insured
     const flightInsurancePayout = flightInsurance.methods
@@ -200,6 +200,65 @@ exports.payout = async function (req, res) {
   }
 
   if (eventType === "NO_INSURED_EVENT") {
+    const flightInsurance = new web3.eth.Contract(
+      FlightInsurance.abi,
+      contractAddress
+    );
+    const nonce = await web3.eth.getTransactionCount(adminWalletAddress);
+  
+    var i = 0;
+    var payoutToInsurers = 0;
+
+    insuranceDetails.insurers.forEach((item) => {
+      // Payout to INSURERs
+      const insurerAddr = item.wallet_addr;
+      const insuringAmount = web3.utils.toWei((item.insuring_amount).toString(), "ether");
+      console.log(insurerAddr, insuringAmount);
+      payoutToInsurers += parseInt(web3.utils.toWei((item.insuring_amount).toString(), "ether"))
+
+      const flightInsurancePayout = flightInsurance.methods
+        .payout(insurerAddr, insuringAmount)
+        .encodeABI();
+      const signedPromise = account.signTransaction({
+        data: flightInsurancePayout,
+        from: adminWalletAddress,
+        to: web3.utils.toHex(contractAddress),
+        gas: web3.utils.toHex(1800000),
+        nonce: nonce + i
+      });
+
+      signedPromise
+        .then((signedTx) => {
+          // raw transaction string may be available in .raw or
+          // .rawTransaction depending on which signTransaction
+          // function was called
+          const sentTx = web3.eth.sendSignedTransaction(
+            signedTx.raw || signedTx.rawTransaction
+          );
+          sentTx.on("receipt", (receipt) => {
+            console.log(receipt);
+          });
+          sentTx.on("error", (err) => {
+            console.error(err);
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+        i++;
+    });
+    const amountPaid = payoutToInsurers;
+    const payoutForInsuredBeforeComms = contractBalance - amountPaid;
+    const payoutForInsured = payoutForInsuredBeforeComms;
+    // console.log("contractBalance", parseInt(contractBalance));
+    // console.log("amountPaid", payoutToInsurers);
+    // console.log("payoutForInsuredBeforeComms", payoutForInsuredBeforeComms);
+    // console.log("payoutForInsured", payoutForInsured);
+
+    console.log("amountPaid", web3.utils.fromWei(amountPaid.toString(), "ether"));
+    // console.log("commission", web3.utils.fromWei(commission.toString(), "ether"));
+    console.log("payoutForInsured", web3.utils.fromWei(payoutForInsured.toString(), "ether"));
+    console.log("contractBalance", web3.utils.fromWei(contractBalance.toString(), "ether"));
   }
 
   res.json({ message: "payout ok" });
